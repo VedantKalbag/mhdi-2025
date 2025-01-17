@@ -25,6 +25,10 @@ class AudioRequest(BaseModel):
 def health():
     return {"status": "ok"}
 
+@app.get("/test")
+def test_request_object(request):
+    print(request)
+
 @app.post("/separate-stems")
 def separate_stems(request: AudioRequest):
     print(request)
