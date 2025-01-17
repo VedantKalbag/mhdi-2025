@@ -36,6 +36,9 @@ class AudioProject:
         # return os.path.join(output_path, model,file_name[:file_name.find('.')])
         separator = demucs.api.Separator(model=model)
         origin, separated = separator.separate_audio_file(path_to_file)
+        for f, sources in separated:
+            for stem, source in sources.items():
+                demucs.api.save_audio(source, f"{output_path}/{stem}_{f}", samplerate=separator.samplerate)
         return separated
 
     def get_beats(self, audio_file):
@@ -58,7 +61,7 @@ class AudioProject:
         self.bpm = 60.0/np.mean(np.diff(beats))
         return self.bpm
 
-    def time_stretch(self, audio_file, target_bpm=None, stretch_ratio=None):
+    def time_stretch(self, audio_file, target_bpm=None, stretch_ratio=1):
         '''
         Time stretch audio file to target bpm
         :param audio_file: str, path to audio file
