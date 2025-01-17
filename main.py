@@ -36,10 +36,12 @@ class AudioProject:
         # return os.path.join(output_path, model,file_name[:file_name.find('.')])
         separator = demucs.api.Separator(model=model)
         origin, separated = separator.separate_audio_file(path_to_file)
+        output_paths = []
         for f, sources in separated:
             for stem, source in sources.items():
                 demucs.api.save_audio(source, f"{output_path}/{stem}_{f}", samplerate=separator.samplerate)
-        return separated
+                output_paths.append(f"{output_path}/{stem}_{f}")
+        return output_paths
 
     def get_beats(self, audio_file):
         '''
