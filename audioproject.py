@@ -30,7 +30,7 @@ def split_audio_demucs(path_to_file,model='htdemucs_6s',output_path=config.OUTPU
     :return: None
     '''
     sp.run(["python3", "-m", "demucs.separate", "-o", output_path, "-n", model, path_to_file])
-    output_dir = Path(output_path) / Path(model)
+    output_dir = Path(output_path) / Path(model) / Path(path_to_file).stem
     output_files = output_dir.rglob('*.wav')
     return output_files
     # file_name = os.path.basename(path_to_file)
