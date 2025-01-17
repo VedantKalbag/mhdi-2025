@@ -27,6 +27,9 @@ def health():
 
 @app.post("/separate-stems")
 def separate_stems(request: AudioRequest):
+    print(request)
+    print(request.youtube_url)
+    print(request.timestretch_ratio)
     video_id = get_video_id(request.youtube_url)
     download_audio(request.youtube_url)
     audio_path = f"{video_id}.wav"
