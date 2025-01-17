@@ -21,6 +21,10 @@ class AudioRequest(BaseModel):
     youtube_url: str
     timestretch_ratio: float
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/separate-stems")
 def separate_stems(request: AudioRequest):
     video_id = get_video_id(request.youtube_url)
