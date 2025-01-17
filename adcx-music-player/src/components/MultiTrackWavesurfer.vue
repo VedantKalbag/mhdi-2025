@@ -1,5 +1,5 @@
 <template>
-    <div class="waveforms-container">
+    <div v-if="audioStore.isReady" class="waveforms-container">
         <div class="controls">
             <v-btn @click="playPause">
                 <v-icon>{{ isPlaying ? 'mdi-pause' : 'mdi-play' }}</v-icon>
@@ -37,15 +37,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import Multitrack from 'wavesurfer-multitrack';
+import { useAudioStore } from '../stores/audio';
+
+const audioStore = useAudioStore();
 
 interface Track {
     id: number;
     name: string;
     volume: number;
     muted: boolean;
-    filename: string;
+    trackname: string;
+    color: string;
 }
 
 const isPlaying = ref(false);
@@ -53,25 +57,40 @@ const zoom = ref(30);
 let multitrack: any = null;
 
 const tracks = ref<Track[]>([
-    { id: 1, name: 'Vocals', volume: 1, muted: false, filename: 'LIFAFA_Jaago.mp3_vocals.ogg' },
-    { id: 2, name: 'Bass', volume: 1, muted: false, filename: 'LIFAFA_Jaago.mp3_bass.ogg' },
-    { id: 3, name: 'Drums', volume: 1, muted: false, filename: 'LIFAFA_Jaago.mp3_drums.ogg' },
-    { id: 4, name: 'Piano', volume: 1, muted: false, filename: 'LIFAFA_Jaago.mp3_piano.ogg' },
-    { id: 5, name: 'Other', volume: 1, muted: false, filename: 'LIFAFA_Jaago.mp3_other.ogg' },
+    { id: 1, name: 'Vocals', volume: 1, muted: false, trackname: 'vocals.wav', color: '#0000FF' },
+    { id: 2, name: 'Bass', volume: 1, muted: false, trackname: 'bass.wav', color: '#00FF00' },
+    { id: 3, name: 'Drums', volume: 1, muted: false, trackname: 'drums.wav', color: '#FF0000' },
+    { id: 4, name: 'Piano', volume: 1, muted: false, trackname: 'piano.wav', color: '#FFA500' },
+    { id: 5, name: 'Other', volume: 1, muted: false, trackname: 'other.wav', color: '#FFA500' },
+    { id: 6, name: 'Guitar', volume: 1, muted: false, trackname: 'guitar.wav', color: '#0000FF' },
 ]);
 
-onMounted(() => {
+const baseUrl = 'http://192.168.243.23:9000/audio/';
+
+const wavesurfers = ref<Multitrack[]>([]);
+
+const initializeMultitrack = () => {
+    if (!audioStore.isReady) return;
+
+    // print audioStore.audioBasePath
+    console.log(`${baseUrl}${audioStore.audioBasePath}vocals.wav`);
+
     const trackConfigs = tracks.value.map(track => ({
         id: track.id,
         draggable: false,
-        url: `http://localhost:8080/${track.filename}`,
+        url: `${baseUrl}${audioStore.audioBasePath}${track.trackname}`,
         volume: track.volume,
         options: {
             waveColor: getTrackColor(track.name),
             progressColor: getProgressColor(track.name),
-            height: 80,
+            height: 60,
         },
     }));
+
+    // Destroy existing multitrack instance
+    if (multitrack) {
+        multitrack.destroy();
+    }
 
     multitrack = Multitrack.create(trackConfigs, {
         container: document.querySelector('#multitrack-container'),
@@ -92,6 +111,43 @@ onMounted(() => {
     multitrack.once('canplay', () => {
         console.log('Ready to play');
     });
+
+    // Create waveform for each track
+    tracks.value.forEach((track) => {
+        const container = document.createElement('div');
+        container.id = `waveform-${track.name.toLowerCase()}`;
+        document.querySelector('.waveforms-container')?.appendChild(container);
+
+        const wavesurfer = Multitrack.create({
+            container: `#waveform-${track.name.toLowerCase()}`,
+            waveColor: track.color,
+            progressColor: track.color,
+            height: 100,
+            normalize: true,
+        });
+
+        // Load audio file
+        const audioUrl = baseUrl + audioStore.audioBasePath + track.trackname;
+        wavesurfer.load(audioUrl);
+
+        wavesurfers.value.push(wavesurfer);
+    });
+};
+
+// Check if audioStore.isReady is changed
+watch(
+    () => audioStore.isReady,
+    (newValue) => {
+        if (newValue) {
+            initializeMultitrack();
+        }
+    }
+);
+
+onMounted(() => {
+    if (audioStore.isReady) {
+        initializeMultitrack();
+    }
 });
 
 const getTrackColor = (name: string) => {
@@ -101,6 +157,7 @@ const getTrackColor = (name: string) => {
         Drums: 'hsl(200, 87%, 49%)',
         Piano: 'hsl(270, 87%, 49%)',
         Other: 'hsl(320, 87%, 49%)',
+        Guitar: 'hsl(320, 87%, 49%)',
     };
     return colors[name as keyof typeof colors];
 };
@@ -112,6 +169,7 @@ const getProgressColor = (name: string) => {
         Drums: 'hsl(200, 87%, 20%)',
         Piano: 'hsl(270, 87%, 20%)',
         Other: 'hsl(320, 87%, 20%)',
+        Guitar: 'hsl(320, 87%, 20%)',
     };
     return colors[name as keyof typeof colors];
 };
@@ -136,6 +194,7 @@ const updateVolume = (track: Track) => {
 
 const toggleMute = (track: Track) => {
     if (multitrack) {
+        console.log(track.id, track.muted ? 0 : track.volume);
         multitrack.setTrackVolume(track.id, track.muted ? 0 : track.volume);
     }
 };
@@ -150,6 +209,7 @@ onUnmounted(() => {
     if (multitrack) {
         multitrack.destroy();
     }
+    audioStore.reset();
 });
 </script>
 
