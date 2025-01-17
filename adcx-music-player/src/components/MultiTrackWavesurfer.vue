@@ -72,9 +72,6 @@ const wavesurfers = ref<Multitrack[]>([]);
 const initializeMultitrack = () => {
     if (!audioStore.isReady) return;
 
-    // print audioStore.audioBasePath
-    console.log(`${baseUrl}${audioStore.audioBasePath}vocals.wav`);
-
     const trackConfigs = tracks.value.map(track => ({
         id: track.id,
         draggable: false,
@@ -118,17 +115,20 @@ const initializeMultitrack = () => {
         container.id = `waveform-${track.name.toLowerCase()}`;
         document.querySelector('.waveforms-container')?.appendChild(container);
 
-        const wavesurfer = Multitrack.create({
-            container: `#waveform-${track.name.toLowerCase()}`,
-            waveColor: track.color,
-            progressColor: track.color,
-            height: 100,
-            normalize: true,
+        const wavesurfer = Multitrack.create([{
+            id: track.id,
+            draggable: false,
+            url: `${baseUrl}${audioStore.audioBasePath}${track.trackname}`,
+            options: {
+                waveColor: track.color,
+                progressColor: track.color,
+                height: 100,
+                normalize: true,
+            }
+        }], {
+            container: container,
+            minPxPerSec: zoom.value,
         });
-
-        // Load audio file
-        const audioUrl = baseUrl + audioStore.audioBasePath + track.trackname;
-        wavesurfer.load(audioUrl);
 
         wavesurfers.value.push(wavesurfer);
     });
