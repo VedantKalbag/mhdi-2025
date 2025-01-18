@@ -68,8 +68,7 @@
                   style="max-width: 180px;"
                   :thumb-label="true"
                   :thumb-size="20"
-                  :messages="false"
-                  :rules="[]"
+                  :thumb-label-text-fn="(v) => `${Math.round(v * 100)}%`"
                 />
               </div>
             </div>
@@ -212,8 +211,8 @@ const initializeMultitrack = () => {
 
   isWaveformReady.value = false;
 
-  const debugMode = true;
-  const baseUrl = 'http://192.168.243.23:9000/audio/';
+  const debugMode = false;
+  const baseUrl = 'http://192.168.68.63:9000/audio/';
   const basePath = debugMode ? 'http://localhost:8080/' : `${baseUrl}${audioStore.audioBasePath}`;
 
   // Calculate track height based on container height

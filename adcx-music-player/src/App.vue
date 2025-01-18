@@ -6,7 +6,7 @@
           <h1>Mewt</h1>
           <v-text-field label="YouTube Address" v-model="address" style="width: 500px;" hide-details
             :disabled="isProcessingAudio" />
-          <v-text-field label="Target BPM" v-model="targetBpm" style="width: 100px;" hide-details
+          <v-text-field label="Target Speed" v-model="targetSpeed" style="width: 100px;" hide-details
             :disabled="isProcessingAudio" />
           <v-btn @click="submit" :loading="isProcessingAudio" :disabled="isProcessingAudio"
             :prepend-icon="isFirstTime ? 'mdi-play' : 'mdi-refresh'" color="primary">
@@ -14,7 +14,7 @@
           </v-btn>
         </div>
       </div>
-      <MultiTrackWavesurfer class="content" :audioBasePath="audioStore.audioBasePath" v-show="!isFirstTime" />
+      <MultiTrackWavesurfer class="content" :audioBasePath="audioStore.audioBasePath"  />
     </v-main>
   </v-app>
 </template>
@@ -23,9 +23,10 @@
 import { ref } from 'vue';
 import MultiTrackWavesurfer from './components/MultiTrackWavesurfer.vue';
 import { useAudioStore } from './stores/audio';
+import { useBeatsStore } from './stores/beats';
 
-const address = ref('https://www.youtube.com/watch?v=M3B_TrJe9EI');
-const targetBpm = ref(120);
+const address = ref('https://www.youtube.com/watch?v=_-ywSPWu3K8');
+const targetSpeed = ref(1.2);
 const isProcessingAudio = ref(false);
 const error = ref('');
 const isFirstTime = ref(true);
@@ -37,16 +38,15 @@ const submit = async () => {
   isProcessingAudio.value = true;
 
   try {
-    /*
-    const response = await fetch('http://192.168.243.23:9000/separate-stems', {
-    method: 'POST',
-    headers: {
-    'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-    youtube_url: address.value,
-    timestretch_ratio: targetBpm.value,
-    })
+    const response = await fetch('http://192.168.68.63:9000/separate-stems', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        youtube_url: address.value,
+        timestretch_ratio: targetSpeed.value,
+      })
     });
   
     if (!response.ok) {
@@ -62,21 +62,15 @@ const submit = async () => {
     console.error('Response text:', text);
     throw new Error('Invalid JSON response from server');
     }
-  
+
     console.log(data);
-  
-  
-    let data = ['resources/tmp/htdemucs_6s/M3B_TrJe9EI/drums.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/piano.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/vocals.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/guitar.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/other.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/bass.wav'];
-  
+
     const firstFile = data[0];
     const match = firstFile.match(/^(resources\/tmp\/htdemucs_6s\/[^/]+\/)/);
     if (!match) {
     throw new Error('Invalid file path format');
     }
-      audioStore.setAudioBasePath(match[1]);
-      */
-
-    audioStore.setAudioBasePath(`${Math.random()}`);
+    audioStore.setAudioBasePath(match[1]);
   } catch (e: unknown) {
     error.value = `Error: ${e instanceof Error ? e.message : 'Unknown error'}`;
     console.error('Error:', e);
@@ -85,6 +79,19 @@ const submit = async () => {
     isFirstTime.value = false;
   }
 }
+
+const getDownBeat = async () => {
+  const response = await fetch('http://192.168.68.63:9000/get-downbeat', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+
+  const beatTimes = JSON.parse(await response.text());
+  beatsStore.setBeatTimes(beatTimes);
+}
+
 </script>
 
 <style scoped>
