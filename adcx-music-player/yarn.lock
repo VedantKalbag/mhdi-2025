@@ -1916,7 +1916,7 @@ wavesurfer-multitrack@^0.4.12:
   dependencies:
     wavesurfer.js "^7.6.3"
 
-wavesurfer.js@^7.6.3:
+wavesurfer.js@^7.6.3, wavesurfer.js@^7.7.3:
   version "7.8.16"
   resolved "https://registry.yarnpkg.com/wavesurfer.js/-/wavesurfer.js-7.8.16.tgz#9309f824e851f0cd812d3dd1982389b124cd29da"
   integrity sha512-lhQF42A4Wn7ug5bixaqGK53qWF2minWdXlzxPtLV+QoVH3WgvVSdsP2HBaHRbkfT2Lh67kJG6CquFdukmf95gg==

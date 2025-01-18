@@ -43,9 +43,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import Multitrack from 'wavesurfer-multitrack';
+import WaveSurfer from 'wavesurfer.js';
+import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions';
 import { useAudioStore } from '../stores/audio';
+import { useBeatsStore } from '../stores/beats';
 
 const audioStore = useAudioStore();
+const beatsStore = useBeatsStore();
 const multitrackContainer = ref<HTMLElement | null>(null);
 let multitrack: Multitrack | null = null;
 
@@ -55,6 +59,13 @@ interface Track {
   volume: number;
   muted: boolean;
   trackname: string;
+}
+
+interface Marker {
+  time: number;
+  label: string;
+  color?: string;
+  position?: 'top' | 'bottom';
 }
 
 const isPlaying = ref(false);
@@ -68,6 +79,32 @@ const tracks = ref<Track[]>([
   { id: 4, name: 'Drums', volume: 1, muted: false, trackname: 'drums.wav' },
   { id: 5, name: 'Other', volume: 1, muted: false, trackname: 'other.wav' },
 ]);
+
+const markerDefaults = {
+  label: '',
+  color: 'white',
+  position: 'top' as const
+};
+
+const markers = ref<Marker[]>(
+  beatsStore.beatTimes.map(time => ({
+    time,
+    ...markerDefaults
+  }))
+);
+
+watch(
+  () => beatsStore.beatTimes,
+  (newBeatTimes) => {
+    markers.value = newBeatTimes.map(time => ({
+      time,
+      ...markerDefaults
+    }));
+    if (audioStore.isReady) {
+      initializeMultitrack();
+    }
+  }
+);
 
 const initializeMultitrack = () => {
   if (!audioStore.isReady || !multitrackContainer.value) return;
@@ -86,6 +123,7 @@ const initializeMultitrack = () => {
       progressColor: getTrackColor(track.id, true),
       height: 60,
     },
+    markers: markers.value
   }));
 
   if (multitrack) {
@@ -99,13 +137,14 @@ const initializeMultitrack = () => {
     cursorColor: '#D72F21',
     trackBackground: '#2D2D2D',
     trackBorderColor: '#7C7C7C',
+    timelineOptions: {
+      height: 30,
+    },
   });
 
-  multitrack.on('ready', () => {
-    console.log('Tracks initialized:', trackConfigs.map(t => ({
-      id: t.id,
-      volume: t.volume
-    })));
+  multitrack.on('marker-click', (marker: any) => {
+    console.log('Marker clicked:', marker);
+    multitrack?.setTime(marker.time);
   });
 };
 
@@ -127,7 +166,7 @@ onMounted(() => {
 const getTrackColor = (index: number, progressColor: boolean) => {
   const hue = index * (360 / tracks.value.length);
   const saturation = 100;
-  const lightness = progressColor ? 75 : 60;
+  const lightness = progressColor ? 75 : 80;
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
 
@@ -207,6 +246,7 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 16px;
   min-height: 400px;
+  position: relative;
 }
 
 .track-controls {
@@ -236,6 +276,18 @@ onUnmounted(() => {
 }
 
 .waveforms, .waveform-container {
+  display: none;
+}
+
+:deep(.wavesurfer-region) {
+  opacity: 0.7;
+}
+
+:deep(.wavesurfer-region:hover) {
+  opacity: 1;
+}
+
+:deep(.wavesurfer-handle) {
   display: none;
 }
 </style>
