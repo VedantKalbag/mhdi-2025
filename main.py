@@ -8,6 +8,7 @@ from audioproject import (download_audio, time_stretch,
                           split_audio_demucs, get_downbeats)
 from utils import get_video_id
 import config
+import json
 
 import logging
 
@@ -47,6 +48,7 @@ def separate_stems(request: AudioRequest):
     download_audio(request.youtube_url)
     audio_path = f"{config.OUTPUT_DIR}/{video_id}.wav"
     time_stretch(audio_path, request.timestretch_ratio)
+    _ = get_downbeats(audio_path.replace('.wav', '_stretched.wav'))
 
     stems = [path for path in split_audio_demucs(audio_path)]
     return stems
@@ -83,8 +85,11 @@ def get_audio(full_path: str):
     )
 
 
-@app.get("/get-downbeat/{audio_path:path}")
-def get_downbeat(audio_path: str):
-    logger.debug(f"Received request for downbeats for file: {audio_path}")
-    downbeats = get_downbeats(audio_path)
+@app.get("/get-downbeat")
+def get_downbeat():
+    logger.debug(f"Received request for downbeats")
+    # downbeats = get_downbeats(audio_path)
+    with open(f'{config.OUTPUT_DIR}/beat_data.json', 'r') as f:
+        beat_data = json.load(f)
+    downbeats = beat_data['beats']
     return downbeats
