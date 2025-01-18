@@ -1,15 +1,15 @@
 <template>
   <div v-if="audioStore.isReady" class="waveforms-container">
+    <div v-show="!isWaveformReady" class="loading-overlay">
+      <v-progress-circular
+        indeterminate
+        size="50"
+        width="3"
+        color="primary"
+      />
+    </div>
     <div class="controls">
       <v-btn @click="playPause" :disabled="!isWaveformReady">
-        <v-progress-circular
-          v-show="!isWaveformReady"
-          indeterminate
-          size="20"
-          width="2"
-          color="primary"
-          class="mr-2"
-        />
         <v-icon>{{ isPlaying ? 'mdi-pause' : 'mdi-play' }}</v-icon>
       </v-btn>
       <v-slider
@@ -25,43 +25,46 @@
       />
     </div>
 
-    <div ref="multitrackContainer" class="multitrack-container" />
-
-    <div class="track-controls">
-      <div v-for="track in tracks" :key="track.name" class="track-control">
-        <span class="track-name">{{ track.name }}</span>
-        <div class="track-buttons">
-          <v-btn
-            size="small"
-            variant="text"
+    <div class="tracks-wrapper">
+      <div class="track-controls">
+        <div v-for="track in tracks" :key="track.name" class="track-control">
+          <div class="track-name-container">
+            <span class="track-name">{{ track.name }}</span>
+          </div>
+          <div class="track-buttons">
+            <v-btn
+              size="small"
+              variant="text"
+              :disabled="!isWaveformReady"
+              :class="{ 'mute-active': track.muted }"
+              @click="handleMuteChange(track, !track.muted)"
+            >
+              M
+            </v-btn>
+            <v-btn
+              size="small"
+              variant="text"
+              :disabled="!isWaveformReady"
+              :class="{ 'solo-active': track.solo }"
+              @click="handleSoloChange(track, !track.solo)"
+            >
+              S
+            </v-btn>
+          </div>
+          <v-slider
+            density="compact"
+            :model-value="track.volume"
+            :min="0"
+            :max="1"
+            :step="0.01"
+            @update:model-value="(value) => handleVolumeChange(track, value)"
+            hide-details
+            class="volume-slider"
             :disabled="!isWaveformReady"
-            :class="{ 'mute-active': track.muted }"
-            @click="handleMuteChange(track, !track.muted)"
-          >
-            M
-          </v-btn>
-          <v-btn
-            size="small"
-            variant="text"
-            :disabled="!isWaveformReady"
-            :class="{ 'solo-active': track.solo }"
-            @click="handleSoloChange(track, !track.solo)"
-          >
-            S
-          </v-btn>
+          />
         </div>
-        <v-slider
-          density="compact"
-          :model-value="track.volume"
-          :min="0"
-          :max="1"
-          :step="0.01"
-          @update:model-value="(value) => handleVolumeChange(track, value)"
-          hide-details
-          class="volume-slider"
-          :disabled="!isWaveformReady"
-        />
       </div>
+      <div ref="multitrackContainer" class="multitrack-container" />
     </div>
   </div>
 </template>
@@ -198,6 +201,17 @@ const initializeMultitrack = () => {
   const baseUrl = 'http://192.168.243.23:9000/audio/';
   const basePath = debugMode ? 'http://localhost:8080/' : `${baseUrl}${audioStore.audioBasePath}`;
 
+  // Calculate track height based on container height
+  const containerHeight = multitrackContainer.value.clientHeight;
+  const timelineHeight = 30;
+  const trackHeight = Math.floor((containerHeight - timelineHeight) / tracks.value.length);
+
+  // Update CSS variable for track control height
+  const trackControlsElement = document.querySelector('.track-controls');
+  if (trackControlsElement) {
+    trackControlsElement.style.setProperty('--track-height', `${trackHeight}px`);
+  }
+
   const trackConfigs = tracks.value.map(track => ({
     id: track.id,
     draggable: false,
@@ -206,7 +220,7 @@ const initializeMultitrack = () => {
     options: {
       waveColor: getTrackColor(track.id, false),
       progressColor: getTrackColor(track.id, true),
-      height: 60,
+      height: trackHeight,
     },
     markers: markers.value
   }));
@@ -365,7 +379,19 @@ const updateZoom = (value: number) => {
   }
 };
 
+// Handle window resize
+const handleResize = () => {
+  if (audioStore.isReady) {
+    initializeMultitrack();
+  }
+};
+
+// Add resize listener
+window.addEventListener('resize', handleResize);
+
+// Clean up
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
   if (multitrack) {
     multitrack.destroy();
   }
@@ -378,62 +404,96 @@ onUnmounted(() => {
 
 <style scoped>
 .waveforms-container {
-  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  gap: 12px;
   background: #1E1E1E;
   color: white;
+  position: relative;
+  height: 100%;
+  padding: 12px 20px;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(30, 30, 30, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  backdrop-filter: blur(2px);
 }
 
 .controls {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 8px;
 }
 
 .zoom-slider {
   width: 200px;
 }
 
-.multitrack-container {
-  width: 100%;
-  background: #2D2D2D;
-  border-radius: 8px;
-  padding: 16px;
-  min-height: 400px;
-  position: relative;
+.tracks-wrapper {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .track-controls {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px;
+  gap: 0;
+  padding: 10px;
+  top: 10px;
   background: #2D2D2D;
-  border-radius: 8px;
+  border-radius: 8px 0px 0px 8px;
+  width: 300px;
+  min-width: 300px;
+  padding-top: 8px;
+  overflow: hidden;
+  height: 100%;
 }
 
 .track-control {
   display: grid;
-  grid-template-columns: 80px 120px 1fr;
+  grid-template-columns: minmax(60px, 80px) 90px 1fr;
   align-items: center;
-  gap: 16px;
-  height: 40px;
+  gap: 4px;
+  height: calc(var(--track-height, 60px) + 2px);
+  padding-right: 8px;
+  border-bottom: solid 1px #7C7C7C
+}
+
+.track-name-container {
+  padding: 0 4px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .track-name {
   font-weight: bold;
   color: white;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  font-size: 0.9rem;
 }
 
 .track-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  justify-content: center;
+  min-width: 90px;
 }
 
 .mute-active {
@@ -448,12 +508,11 @@ onUnmounted(() => {
 
 .volume-slider {
   width: 100%;
-  margin: 5px;
-  min-width: 100px;
+  margin: 0;
+  min-width: 80px;
   flex-shrink: 0;
-  margin-top: 0;
-  margin-bottom: 0;
   justify-self: stretch;
+  padding: 0 4px;
 }
 
 .waveforms, .waveform-container {
@@ -470,5 +529,18 @@ onUnmounted(() => {
 
 :deep(.wavesurfer-handle) {
   display: none;
+}
+
+.multitrack-container {
+  width: 100%;
+  background: #2D2D2D;
+  border-radius: 0px 8px 8px 0px;
+  flex-grow: 1;
+  position: relative;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 0;
+  padding-right: 0;
+  overflow: hidden;
 }
 </style>

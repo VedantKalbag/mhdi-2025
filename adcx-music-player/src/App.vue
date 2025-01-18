@@ -1,30 +1,29 @@
 <template>
-    <v-app>
-        <v-app-bar>
-            <v-app-bar-title>ADCx India 25 Music Player</v-app-bar-title>
-        </v-app-bar>
-        <v-main>
-            <div class="content-wrapper" v-if="stage === 'input'">
-                <div class="youtube-address-input">
-                    <v-icon size="large">mdi-youtube</v-icon>
-                    <v-text-field label="YouTube Address" v-model="address" style="width: 500px;"
-                        :disabled="isProcessingAudio" />
-                    <v-text-field label="Target BPM" v-model="targetBpm" style="width: 100px;"
-                        :disabled="isProcessingAudio" />
-                    <v-btn @click="submit" :loading="isProcessingAudio" :disabled="isProcessingAudio">
-                        Submit
-                    </v-btn>
-                </div>
-            </div>
-            <MultiTrackWavesurfer 
-              v-else-if="stage === 'player'" 
-              :audioBasePath="audioStore.audioBasePath" 
-            />
-        </v-main>
-        <v-footer>
-            <div v-if="error" class="error-message">{{ error }}</div>
-        </v-footer>
-    </v-app>
+  <v-app>
+    <v-app-bar>
+      <v-app-bar-title>
+        ADCx India 🇮🇳 25 Music Player
+      </v-app-bar-title>
+    </v-app-bar>
+    <v-main>
+      <div class="content-wrapper" v-if="stage === 'input'">
+        <div class="youtube-address-input">
+          <v-icon size="large">mdi-youtube</v-icon>
+          <v-text-field label="YouTube Address" v-model="address" style="width: 500px;"
+            :disabled="isProcessingAudio" />
+          <v-text-field label="Target BPM" v-model="targetBpm" style="width: 100px;"
+            :disabled="isProcessingAudio" />
+          <v-btn @click="submit" :loading="isProcessingAudio" :disabled="isProcessingAudio">
+            Submit
+          </v-btn>
+        </div>
+      </div>
+      <MultiTrackWavesurfer 
+        v-else-if="stage === 'player'" 
+        :audioBasePath="audioStore.audioBasePath" 
+      />
+    </v-main>
+  </v-app>
 </template>
 
 <script setup lang="ts">
@@ -45,49 +44,52 @@ const submit = async () => {
   isProcessingAudio.value = true;
   
   try {
-    /*
-      const response = await fetch('http://192.168.243.23:9000/separate-stems', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        youtube_url: address.value,
-        timestretch_ratio: targetBpm.value,
-      })
-    });
+  /*
+  const response = await fetch('http://192.168.243.23:9000/separate-stems', {
+  method: 'POST',
+  headers: {
+  'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+  youtube_url: address.value,
+  timestretch_ratio: targetBpm.value,
+  })
+  });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+  if (!response.ok) {
+  throw new Error(`HTTP error! status: ${response.status}`);
+  }
 
-    const text = await response.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e: unknown) {
-      console.error('Error parsing JSON:', e);
-      console.error('Response text:', text);
-      throw new Error('Invalid JSON response from server');
-    }
+  const text = await response.text();
+  let data;
+  try {
+  data = JSON.parse(text);
+  } catch (e: unknown) {
+  console.error('Error parsing JSON:', e);
+  console.error('Response text:', text);
+  throw new Error('Invalid JSON response from server');
+  }
 
-    console.log(data);
+  console.log(data);
+
+
+  let data = ['resources/tmp/htdemucs_6s/M3B_TrJe9EI/drums.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/piano.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/vocals.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/guitar.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/other.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/bass.wav'];
+
+  const firstFile = data[0];
+  const match = firstFile.match(/^(resources\/tmp\/htdemucs_6s\/[^/]+\/)/);
+  if (!match) {
+  throw new Error('Invalid file path format');
+  }
+    audioStore.setAudioBasePath(match[1]);
     */
 
-    let data = ['resources/tmp/htdemucs_6s/M3B_TrJe9EI/drums.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/piano.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/vocals.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/guitar.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/other.wav', 'resources/tmp/htdemucs_6s/M3B_TrJe9EI/bass.wav'];
-
-    const firstFile = data[0];
-    const match = firstFile.match(/^(resources\/tmp\/htdemucs_6s\/[^/]+\/)/);
-    if (!match) {
-      throw new Error('Invalid file path format');
-    }
-    audioStore.setAudioBasePath(match[1]);
-    stage.value = 'player';
+  audioStore.setAudioBasePath('hoge');
+  stage.value = 'player';
   } catch (e: unknown) {
-    error.value = `Error: ${e instanceof Error ? e.message : 'Unknown error'}`;
-    console.error('Error:', e);
+  error.value = `Error: ${e instanceof Error ? e.message : 'Unknown error'}`;
+  console.error('Error:', e);
   } finally {
-    isProcessingAudio.value = false;
+  isProcessingAudio.value = false;
   }
 }
 </script>
