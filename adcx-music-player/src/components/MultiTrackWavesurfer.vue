@@ -28,40 +28,47 @@
     <div class="tracks-wrapper">
       <div class="track-controls">
         <div v-for="track in tracks" :key="track.name" class="track-control">
-          <div class="track-name-container">
-            <span class="track-name">{{ track.name }}</span>
+          <div class="track-control-rows">
+            <div class="track-name-container">
+              <span class="track-name" style="font-size: 1.2rem;">{{ track.name }}</span>
+            </div>
+            <div class="track-controls-row">
+              <div class="track-buttons">
+                <v-btn
+                  size="small"
+                  variant="text"
+                  :disabled="!isWaveformReady"
+                  :class="{ 'solo-active': track.solo }"
+                  @click="handleSoloChange(track, !track.solo)"
+                  class="control-btn"
+                >
+                  S
+                </v-btn>
+                <v-btn
+                  size="small"
+                  variant="text"
+                  :disabled="!isWaveformReady"
+                  :class="{ 'mute-active': track.muted }"
+                  @click="handleMuteChange(track, !track.muted)"
+                  class="control-btn"
+                >
+                  M
+                </v-btn>
+              </div>
+              <v-slider
+                density="compact"
+                :model-value="track.volume"
+                :min="0"
+                :max="1"
+                :step="0.01"
+                @update:model-value="(value) => handleVolumeChange(track, value)"
+                hide-details
+                class="volume-slider"
+                :disabled="!isWaveformReady"
+                style="max-width: 180px;"
+              />
+            </div>
           </div>
-          <div class="track-buttons">
-            <v-btn
-              size="small"
-              variant="text"
-              :disabled="!isWaveformReady"
-              :class="{ 'mute-active': track.muted }"
-              @click="handleMuteChange(track, !track.muted)"
-            >
-              M
-            </v-btn>
-            <v-btn
-              size="small"
-              variant="text"
-              :disabled="!isWaveformReady"
-              :class="{ 'solo-active': track.solo }"
-              @click="handleSoloChange(track, !track.solo)"
-            >
-              S
-            </v-btn>
-          </div>
-          <v-slider
-            density="compact"
-            :model-value="track.volume"
-            :min="0"
-            :max="1"
-            :step="0.01"
-            @update:model-value="(value) => handleVolumeChange(track, value)"
-            hide-details
-            class="volume-slider"
-            :disabled="!isWaveformReady"
-          />
         </div>
       </div>
       <div ref="multitrackContainer" class="multitrack-container" />
@@ -103,12 +110,12 @@ const isPlaying = ref(false);
 const zoom = ref(30);
 
 const tracks = ref<Track[]>([
-  { id: 0, name: 'Vocals', volume: 1, muted: false, solo: false, trackname: 'vocals.wav' },
-  { id: 1, name: 'Guitar', volume: 1, muted: false, solo: false, trackname: 'guitar.wav' },
-  { id: 2, name: 'Bass', volume: 1, muted: false, solo: false, trackname: 'bass.wav' },
-  { id: 3, name: 'Piano', volume: 1, muted: false, solo: false, trackname: 'piano.wav' },
-  { id: 4, name: 'Drums', volume: 1, muted: false, solo: false, trackname: 'drums.wav' },
-  { id: 5, name: 'Other', volume: 1, muted: false, solo: false, trackname: 'other.wav' },
+  { id: 0, name: '🎤 Vocals', volume: 1, muted: false, solo: false, trackname: 'vocals.wav' },
+  { id: 1, name: '🎸 Guitar', volume: 1, muted: false, solo: false, trackname: 'guitar.wav' },
+  { id: 2, name: '🎸 Bass', volume: 1, muted: false, solo: false, trackname: 'bass.wav' },
+  { id: 3, name: '🎹 Piano', volume: 1, muted: false, solo: false, trackname: 'piano.wav' },
+  { id: 4, name: '🥁 Drums', volume: 1, muted: false, solo: false, trackname: 'drums.wav' },
+  { id: 5, name: '🎼 Other', volume: 1, muted: false, solo: false, trackname: 'other.wav' },
 ]);
 
 const markerDefaults = {
@@ -463,19 +470,31 @@ onUnmounted(() => {
 }
 
 .track-control {
-  display: grid;
-  grid-template-columns: minmax(60px, 80px) 90px 1fr;
   align-items: center;
-  gap: 4px;
   height: calc(var(--track-height, 60px) + 2px);
   padding-right: 8px;
-  border-bottom: solid 1px #7C7C7C
+  border-bottom: solid 1px #7C7C7C;
+}
+
+.track-control-rows {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  height: 100%;
+  width: 100%;
 }
 
 .track-name-container {
   padding: 0 4px;
   width: 100%;
   overflow: hidden;
+}
+
+.track-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
 }
 
 .track-name {
@@ -491,9 +510,17 @@ onUnmounted(() => {
 
 .track-buttons {
   display: flex;
-  gap: 4px;
-  justify-content: center;
-  min-width: 90px;
+  gap: 2px;
+  justify-content: flex-start;
+  min-width: 80px;
+}
+
+.control-btn {
+  min-width: 36px !important;
+  width: 36px;
+  padding: 0 !important;
+  font-weight: bold;
+  font-size: 1rem;
 }
 
 .mute-active {
@@ -509,10 +536,9 @@ onUnmounted(() => {
 .volume-slider {
   width: 100%;
   margin: 0;
-  min-width: 80px;
   flex-shrink: 0;
   justify-self: stretch;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
 .waveforms, .waveform-container {
