@@ -1,5 +1,5 @@
 <template>
-  <div v-if="audioStore.isReady" class="waveforms-container">
+  <div class="waveforms-container">
     <div v-show="!isWaveformReady" class="loading-overlay">
       <v-progress-circular
         indeterminate
@@ -8,71 +8,76 @@
         color="primary"
       />
     </div>
-    <div class="controls">
-      <v-btn @click="playPause" :disabled="!isWaveformReady">
-        <v-icon>{{ isPlaying ? 'mdi-pause' : 'mdi-play' }}</v-icon>
-      </v-btn>
-      <v-slider
-        v-model="zoom"
-        :min="10"
-        :max="100"
-        :step="1"
-        label="Zoom"
-        hide-details
-        class="zoom-slider"
-        @update:model-value="updateZoom"
-        :disabled="!isWaveformReady"
-      />
-    </div>
-
-    <div class="tracks-wrapper">
-      <div class="track-controls">
-        <div v-for="track in tracks" :key="track.name" class="track-control">
-          <div class="track-control-rows">
-            <div class="track-name-container">
-              <span class="track-name" style="font-size: 1.2rem;">{{ track.name }}</span>
-            </div>
-            <div class="track-controls-row">
-              <div class="track-buttons">
-                <v-btn
-                  size="small"
-                  variant="text"
-                  :disabled="!isWaveformReady"
-                  :class="{ 'solo-active': track.solo }"
-                  @click="handleSoloChange(track, !track.solo)"
-                  class="control-btn"
-                >
-                  S
-                </v-btn>
-                <v-btn
-                  size="small"
-                  variant="text"
-                  :disabled="!isWaveformReady"
-                  :class="{ 'mute-active': track.muted }"
-                  @click="handleMuteChange(track, !track.muted)"
-                  class="control-btn"
-                >
-                  M
-                </v-btn>
+    <template v-if="audioStore.isReady">
+      <div class="controls">
+        <v-btn @click="playPause" :disabled="!isWaveformReady">
+          <v-icon>{{ isPlaying ? 'mdi-pause' : 'mdi-play' }}</v-icon>
+        </v-btn>
+        <v-slider
+          v-model="zoom"
+          :min="10"
+          :max="100"
+          :step="1"
+          label="Zoom"
+          hide-details
+          class="zoom-slider"
+          @update:model-value="updateZoom"
+          :disabled="!isWaveformReady"
+        />
+      </div>
+      <div class="tracks-wrapper">
+        <div class="track-controls">
+          <div v-for="track in tracks" :key="track.name" class="track-control">
+            <div class="track-control-rows">
+              <div class="track-name-container">
+                <span class="track-name" style="font-size: 1.4rem;">{{ track.name }}</span>
               </div>
-              <v-slider
-                density="compact"
-                :model-value="track.volume"
-                :min="0"
-                :max="1"
-                :step="0.01"
-                @update:model-value="(value) => handleVolumeChange(track, value)"
-                hide-details
-                class="volume-slider"
-                :disabled="!isWaveformReady"
-                style="max-width: 180px;"
-              />
+              <div class="track-controls-row">
+                <div class="track-buttons">
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    :disabled="!isWaveformReady"
+                    :class="{ 'solo-active': track.solo }"
+                    @click="handleSoloChange(track, !track.solo)"
+                    class="control-btn"
+                  >
+                    S
+                  </v-btn>
+                  <v-btn
+                    size="small"
+                    variant="text"
+                    :disabled="!isWaveformReady"
+                    :class="{ 'mute-active': track.muted }"
+                    @click="handleMuteChange(track, !track.muted)"
+                    class="control-btn"
+                  >
+                    M
+                  </v-btn>
+                </div>
+                <v-slider
+                  density="compact"
+                  :model-value="track.volume"
+                  :min="0"
+                  :max="1"
+                  :step="0.01"
+                  @update:model-value="(value) => handleVolumeChange(track, value)"
+                  hide-details
+                  class="volume-slider"
+                  :disabled="!isWaveformReady"
+                  style="max-width: 180px;"
+                  :thumb-label="true"
+                  :thumb-size="20"
+                  :messages="false"
+                  :rules="[]"
+                />
+              </div>
             </div>
           </div>
         </div>
+        <div ref="multitrackContainer" class="multitrack-container" />
       </div>
-      <div ref="multitrackContainer" class="multitrack-container" />
-    </div>
+    </template>
   </div>
 </template>
 
@@ -110,12 +115,12 @@ const isPlaying = ref(false);
 const zoom = ref(30);
 
 const tracks = ref<Track[]>([
-  { id: 0, name: '🎤 Vocals', volume: 1, muted: false, solo: false, trackname: 'vocals.wav' },
-  { id: 1, name: '🎸 Guitar', volume: 1, muted: false, solo: false, trackname: 'guitar.wav' },
-  { id: 2, name: '🎸 Bass', volume: 1, muted: false, solo: false, trackname: 'bass.wav' },
-  { id: 3, name: '🎹 Piano', volume: 1, muted: false, solo: false, trackname: 'piano.wav' },
-  { id: 4, name: '🥁 Drums', volume: 1, muted: false, solo: false, trackname: 'drums.wav' },
-  { id: 5, name: '🎼 Other', volume: 1, muted: false, solo: false, trackname: 'other.wav' },
+  { id: 0, name: '🎤  Vocals', volume: 1, muted: false, solo: false, trackname: 'vocals.wav' },
+  { id: 1, name: '🎸  Guitar', volume: 1, muted: false, solo: false, trackname: 'guitar.wav' },
+  { id: 2, name: '🎸  Bass', volume: 1, muted: false, solo: false, trackname: 'bass.wav' },
+  { id: 3, name: '🎹  Piano', volume: 1, muted: false, solo: false, trackname: 'piano.wav' },
+  { id: 4, name: '🥁  Drums', volume: 1, muted: false, solo: false, trackname: 'drums.wav' },
+  { id: 5, name: '🎼  Other', volume: 1, muted: false, solo: false, trackname: 'other.wav' },
 ]);
 
 const markerDefaults = {
@@ -147,7 +152,7 @@ watch(
 // Update Tone.js settings
 const synth = new Tone.Synth({
   oscillator: {
-    type: "triangle"
+    type: "sawtooth"
   },
   envelope: {
     attack: 0,
@@ -200,7 +205,10 @@ const clearScheduledPulses = () => {
 const isWaveformReady = ref(false);
 
 const initializeMultitrack = () => {
+  console.log('initializeMultitrack', audioStore.isReady, multitrackContainer.value);
   if (!audioStore.isReady || !multitrackContainer.value) return;
+
+  console.log('initializeMultitrack');
 
   isWaveformReady.value = false;
 
@@ -296,20 +304,22 @@ const initializeMultitrack = () => {
   });
 };
 
+// Only set the container ref on mount
+onMounted(() => {
+  console.log('mounted', multitrackContainer.value);
+});
+
 watch(
   () => audioStore.isReady,
   (newValue) => {
     if (newValue) {
-      initializeMultitrack();
+      // Add a small delay to ensure the DOM is updated
+      setTimeout(() => {
+        initializeMultitrack();
+      }, 0);
     }
   }
 );
-
-onMounted(() => {
-  if (audioStore.isReady) {
-    initializeMultitrack();
-  }
-});
 
 const getTrackColor = (index: number, progressColor: boolean) => {
   const hue = index * (360 / tracks.value.length);
@@ -386,19 +396,8 @@ const updateZoom = (value: number) => {
   }
 };
 
-// Handle window resize
-const handleResize = () => {
-  if (audioStore.isReady) {
-    initializeMultitrack();
-  }
-};
-
-// Add resize listener
-window.addEventListener('resize', handleResize);
-
-// Clean up
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
+  window.removeEventListener('resize', debouncedResize);
   if (multitrack) {
     multitrack.destroy();
   }
