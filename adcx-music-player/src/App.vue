@@ -3,6 +3,7 @@
     <v-main>
       <div class="header-container">
         <div class="header">
+          <img src="@/assets/Mewt-new.png" alt="Mewt" style="width: 80px; height: 80px;" />
           <h1>Mewt</h1>
           <v-text-field label="YouTube Address" v-model="address" style="width: 500px;" hide-details
             :disabled="isProcessingAudio" />
@@ -14,7 +15,7 @@
           </v-btn>
         </div>
       </div>
-      <MultiTrackWavesurfer class="content" :audioBasePath="audioStore.audioBasePath"  />
+      <MultiTrackWavesurfer class="content" :audioBasePath="audioStore.audioBasePath" v-show="!isFirstTime" />
     </v-main>
   </v-app>
 </template>
@@ -25,13 +26,14 @@ import MultiTrackWavesurfer from './components/MultiTrackWavesurfer.vue';
 import { useAudioStore } from './stores/audio';
 import { useBeatsStore } from './stores/beats';
 
-const address = ref('https://www.youtube.com/watch?v=_-ywSPWu3K8');
+const address = ref('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 const targetSpeed = ref(1.2);
 const isProcessingAudio = ref(false);
 const error = ref('');
 const isFirstTime = ref(true);
 
 const audioStore = useAudioStore();
+const beatsStore = useBeatsStore();
 
 const submit = async () => {
   error.value = '';
@@ -71,6 +73,7 @@ const submit = async () => {
     throw new Error('Invalid file path format');
     }
     audioStore.setAudioBasePath(match[1]);
+    getDownBeat();
   } catch (e: unknown) {
     error.value = `Error: ${e instanceof Error ? e.message : 'Unknown error'}`;
     console.error('Error:', e);
@@ -121,8 +124,10 @@ const getDownBeat = async () => {
 .header h1 {
   color: white;
   margin: 0;
-  font-size: 2rem;
+  font-size: 2.5rem;
   min-width: 120px;
+  font-family: 'Allura', cursive;
+  font-weight: normal;
 }
 
 .content {
