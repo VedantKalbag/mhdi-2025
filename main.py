@@ -4,7 +4,8 @@ from fastapi.responses import FileResponse
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from audioproject import download_audio, time_stretch, split_audio_demucs
+from audioproject import (download_audio, time_stretch,
+                          split_audio_demucs, get_downbeats)
 from utils import get_video_id
 import config
 
@@ -25,13 +26,16 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+
 class AudioRequest(BaseModel):
     youtube_url: str
     timestretch_ratio: float
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 @app.post("/separate-stems")
 def separate_stems(request: AudioRequest):
@@ -55,23 +59,32 @@ def separate_stems(request: AudioRequest):
 #     return FileResponse(file_path,
 #                         media_type="audio/wav",
 #                         content_disposition_type="inline")
+
+
 @app.get("/audio/{full_path:path}")
 def get_audio(full_path: str):
     logger.debug(f"Received request for file: {full_path}")
-    
+
     # Remove any leading slashes for consistency
     full_path = full_path.lstrip('/')
-    
+
     # Log the path for debugging
     logger.debug(f"Looking for file at: {full_path}")
-    
+
     # Check if file exists before sending
     if not os.path.exists(full_path):
         logger.error(f"File not found: {full_path}")
         raise HTTPException(status_code=404, detail="File not found")
-        
+
     return FileResponse(
         full_path,
         media_type="audio/wav",
         content_disposition_type="inline"
     )
+
+
+@app.get("/get-downbeat/{audio_path:path}")
+def get_downbeat(audio_path: str):
+    logger.debug(f"Received request for downbeats for file: {audio_path}")
+    downbeats = get_downbeats(audio_path)
+    return downbeats
