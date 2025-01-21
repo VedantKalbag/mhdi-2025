@@ -5,7 +5,7 @@ import os
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from audioproject import (download_audio, time_stretch,
-                          split_audio_demucs, get_downbeats)
+                          split_audio_demucs, get_downbeats, get_beats, get_beats_beatnet)
 from utils import get_video_id
 import config
 import json
@@ -47,10 +47,13 @@ def separate_stems(request: AudioRequest):
     video_id = get_video_id(request.youtube_url)
     download_audio(request.youtube_url)
     audio_path = f"{config.OUTPUT_DIR}/{video_id}.wav"
-    time_stretch(audio_path, request.timestretch_ratio)
-    _ = get_downbeats(audio_path.replace('.wav', '_stretched.wav'))
+    # _ = get_beats(audio_path)
 
-    stems = [path for path in split_audio_demucs(audio_path)]
+    stretched_file = time_stretch(audio_path, request.timestretch_ratio)
+    _,_ = get_beats_beatnet(stretched_file)
+
+    # stems = [path for path in split_audio_demucs(audio_path.replace('.wav', '_stretched.wav'))]
+    stems = [path for path in split_audio_demucs(stretched_file)]
     return stems
 
 # API endpoint to send the audio files from disk

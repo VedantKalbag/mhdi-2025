@@ -8,6 +8,7 @@ import demucs.api
 import madmom
 from madmom.features.beats import RNNBeatProcessor, BeatTrackingProcessor
 from madmom.features.downbeats import RNNDownBeatProcessor
+from BeatNet.BeatNet import BeatNet
 # from audiostretchy.stretch import process_audio
 import pyrubberband as pyrb
 import soundfile as sf
@@ -57,7 +58,8 @@ def get_beats(audio_file):
     # load info from beat_data.json
     with open(f'{config.OUTPUT_DIR}/beat_data.json', 'r') as f:
         beat_data = json.load(f)
-    beat_data['beats'] = beats.tolist()
+    beats = beats.tolist()
+    beat_data['beats'] = [beat + (beats[1] - beats[0]) for beat in beats]
     with open(f'{config.OUTPUT_DIR}/beat_data.json', 'w') as f:
         json.dump(beat_data, f)
 
@@ -100,6 +102,25 @@ def get_downbeats(audio_file, min_confidence=0.10): #0.22
     
     return downbeat_times
 
+def get_beats_beatnet(audio_file):
+    '''
+    Get beats from audio file using BeatNet
+    :param audio_file: str, path to audio file
+    :return: np.ndarray, beats
+    '''
+    estimator = BeatNet(1, mode='offline', inference_model='DBN', plot=[], thread=False)
+    beats = estimator.process(audio_file)
+
+    beat_times = beats[:,0]
+    beat_numbers = beats[:,1]
+
+    with open(f'{config.OUTPUT_DIR}/beat_data.json', 'r') as f:
+        beat_data = json.load(f)
+    beat_data['beats'] = beat_times.tolist()
+    with open(f'{config.OUTPUT_DIR}/beat_data.json', 'w') as f:
+        json.dump(beat_data, f)
+    return beat_times, beat_numbers
+
 def get_bpm_from_beats(beats):
     '''
     Get bpm from beats
@@ -138,6 +159,12 @@ def time_stretch(audio_file, stretch_ratio=1):
     y, sr = sf.read(audio_file)
     output_file = os.path.join(output_dir, filename[:filename.find('.')]+"_stretched.wav")
     stretched_audio = pyrb.time_stretch(y, sr, stretch_ratio)
+    # # Scale the beats accordingly
+    # with open(f'{config.OUTPUT_DIR}/beat_data.json', 'r') as f:
+    #     beat_data = json.load(f)
+    # beat_data['beats'] = [beat*stretch_ratio for beat in beat_data['beats']]
+    # with open(f'{config.OUTPUT_DIR}/beat_data.json', 'w') as f:
+    #     json.dump(beat_data, f)
     # stretched_audio = librosa.effects.time_stretch(y, rate=stretch_ratio)
     sf.write(output_file, stretched_audio, sr)
     return output_file
@@ -202,28 +229,33 @@ if __name__=='__main__':
     # download_audio('https://youtube.com/watch?v=Br3KkvgMAZY')
     download_audio('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
     file_id = 'dQw4w9WgXcQ'
-    print("Stretching audio...")
-    time_stretch(f'{config.OUTPUT_DIR}/{file_id}.wav', 0.8)
+    # print("Stretching audio...")
+    # time_stretch(f'{config.OUTPUT_DIR}/{file_id}.wav', 0.8)
     # Plot beats on the waveform
     print("Getting beats...")
-    y, sr = sf.read(f'{config.OUTPUT_DIR}/{file_id}_stretched.wav')
+    y, sr = sf.read(f'{config.OUTPUT_DIR}/{file_id}.wav')
     import matplotlib.pyplot as plt
 
-    beats = get_downbeats(f'{config.OUTPUT_DIR}/{file_id}_stretched.wav')
-    beat_times = [beat * sr for beat in beats]
-
-    plt.figure(figsize=(14, 5))
-    plt.plot(y[:4410000,0], label='Waveform')
-    for beat in beat_times:
-        if beat < 4410000:
-            plt.axvline(x=beat, color='r', linestyle='--', label='Beat')
-    
-    plt.title('Waveform with Beats (First 4410000 Samples)')
+    # beats = get_downbeats(f'{config.OUTPUT_DIR}/{file_id}.wav')
+    beat_times,beat_number = get_beats_beatnet(f'{config.OUTPUT_DIR}/{file_id}.wav')
+    print(beat_times)
+    beat_samples = np.array([int(beat_time * sr) for beat_time in beat_times])
+    # beat_times = [beat[0] * sr for beat in beats]
+    # beats is a 2 dimensional array containing beat time and the downbeat count
+    # Plot all downbeats labelled "1" in red, and the others in blue for the first 4410000 samples
+    # Plot only the beats that fall within the first 4410000 samples
+    plt.plot(y[:441000])
+    beat_samples = beat_samples[beat_samples < 441000]
+    for i, beat in enumerate(beat_samples):
+        if beat_number[i] == 1:
+            plt.axvline(beat, color='red', label='Downbeat' if i == 0 else None)
+        else:
+            plt.axvline(beat, color='blue', label='Beat' if i == 0 else None)
+    plt.title('Waveform with Beats (First 441000 Samples)')
     plt.xlabel('Samples')
     plt.ylabel('Amplitude')
     plt.legend()
     plt.show()
 
-    print("Beats: ", beats)
     # print("Splitting audio files...")
     # print([path for path in split_audio_demucs(f'{config.OUTPUT_DIR}/Br3KkvgMAZY.wav')])
